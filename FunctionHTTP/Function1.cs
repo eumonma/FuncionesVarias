@@ -19,6 +19,7 @@ namespace FunctionHTTP
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
+
             string name = req.Query["name"];
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
