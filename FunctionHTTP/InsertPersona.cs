@@ -68,7 +68,8 @@ namespace FunctionHTTP
 
             var todo = new Todo() { Nombre = data.Name };
             await todoTable.AddAsync(todo.ToTableEntity());
-            return new OkObjectResult(todo);
+//            return new OkObjectResult(todo);
+            return new OkObjectResult("OK");
         }
     }
 }
