@@ -25,6 +25,7 @@ namespace FunctionHTTP
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
 //            log.LogInformation(requestBody);
+//          Comentario 2
 
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
