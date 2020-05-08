@@ -1,15 +1,15 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Microsoft.Azure.WebJobs.Extensions.Storage;
-using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
+using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 
 namespace FunctionHTTP
@@ -17,8 +17,9 @@ namespace FunctionHTTP
     public static class InsertPersona
     {
         private const string TableName = "MyTable";
+        private const string KeyParticion = "PERSONA";
 
-        
+
         public class Todo
         {
             public string Id { get; set; } = Guid.NewGuid().ToString("n");
@@ -31,7 +32,7 @@ namespace FunctionHTTP
         {
             return new TodoTableEntity()
             {
-                PartitionKey = "TODO",
+                PartitionKey = KeyParticion,
                 RowKey = todo.Id,
                 CreatedTime = todo.CreatedTime,
                 IsCompleted = todo.IsCompleted,
@@ -46,13 +47,25 @@ namespace FunctionHTTP
             public bool IsCompleted { get; set; }
         }
 
+
+        public static Todo ToTodo(this TodoTableEntity todo)
+        {
+            return new Todo()
+            {
+                Id = todo.RowKey,
+                CreatedTime = todo.CreatedTime,
+                IsCompleted = todo.IsCompleted,
+                Nombre = todo.NombreEmpleado
+            };
+        }
+
         public class TodoCreateModel
         {
             public string Name { get; set; }
         }
 
         [FunctionName("InsertPersona")]
-//        [return: Table("MyTable")]
+        //        [return: Table("MyTable")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] IAsyncCollector<TodoTableEntity> todoTable,
@@ -68,8 +81,24 @@ namespace FunctionHTTP
 
             var todo = new Todo() { Nombre = data.Name };
             await todoTable.AddAsync(todo.ToTableEntity());
-//            return new OkObjectResult(todo);
+            //            return new OkObjectResult(todo);
             return new OkObjectResult("OK");
+        }
+
+        [FunctionName("RecuperaTabla")]
+        public static async Task<IActionResult> GetTodos(
+//            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Route)]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get")]HttpRequest req,
+            // unfortunately IQueryable<TodoTableEntity> binding not supported in functions v2
+            [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
+            ILogger log)
+        {
+            log.LogInformation("Getting todo list items");
+            var query = new TableQuery<TodoTableEntity>();
+            var segment = await todoTable.ExecuteQuerySegmentedAsync(query, null);
+//            return new OkObjectResult(segment.Select(Mappings.ToTodo));
+            return new OkObjectResult(segment.Select(ToTodo));
+//            return new OkObjectResult(segment.ToTodo());
         }
     }
 }
