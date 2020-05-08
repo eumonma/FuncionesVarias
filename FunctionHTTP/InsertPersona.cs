@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.WindowsAzure.Storage;
 
 
 namespace FunctionHTTP
@@ -18,6 +19,7 @@ namespace FunctionHTTP
     {
         private const string TableName = "MyTable";
         private const string KeyParticion = "PERSONA";
+        private const string routeDelete = "delete";
 
 
         public class Todo
@@ -89,7 +91,6 @@ namespace FunctionHTTP
         public static async Task<IActionResult> GetTodos(
 //            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Route)]HttpRequest req,
             [HttpTrigger(AuthorizationLevel.Anonymous, "get")]HttpRequest req,
-            // unfortunately IQueryable<TodoTableEntity> binding not supported in functions v2
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
             ILogger log)
         {
@@ -98,7 +99,6 @@ namespace FunctionHTTP
             var segment = await todoTable.ExecuteQuerySegmentedAsync(query, null);
 //            return new OkObjectResult(segment.Select(Mappings.ToTodo));
             return new OkObjectResult(segment.Select(ToTodo));
-//            return new OkObjectResult(segment.ToTodo());
         }
 
 
@@ -130,6 +130,33 @@ namespace FunctionHTTP
 
             var segment = await todoTable.ExecuteQuerySegmentedAsync(query, null);
             return new OkObjectResult(segment.Select(ToTodo));
+        }
+
+
+
+        [FunctionName("Table_DeleteTodo")]
+        public static async Task<IActionResult> DeleteTodo(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = routeDelete + "/{id}")]HttpRequest req,
+            [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
+            ILogger log, string id)
+        {
+
+            log.LogInformation("Delete por particion: " + id);
+
+            var particion = req.Query["partition"];
+            log.LogInformation("Delete por particion: " + particion);
+            var deleteEntity = new TableEntity { PartitionKey = particion, RowKey = id, ETag = "*" };
+            var deleteOperation = TableOperation.Delete(deleteEntity);
+            try
+            {
+                await todoTable.ExecuteAsync(deleteOperation);
+            }
+            catch (StorageException e) when (e.RequestInformation.HttpStatusCode == 404)
+            {
+                
+                return new NotFoundResult();
+            }
+            return new OkResult();
         }
     }
 }
