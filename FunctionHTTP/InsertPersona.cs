@@ -100,5 +100,36 @@ namespace FunctionHTTP
             return new OkObjectResult(segment.Select(ToTodo));
 //            return new OkObjectResult(segment.ToTodo());
         }
+
+
+        [FunctionName("RecuperaTablaByPartition")]
+        public static async Task<IActionResult> GetByPartition(
+//            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/{id}")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get")]HttpRequest req,
+            [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
+            ILogger log)
+        {
+
+
+            var particion = req.Query["partition"];
+            log.LogInformation("Getting por particion: " + particion);
+
+            // Mezclar condiciones
+            var query2 = new TableQuery<TodoTableEntity>().Where(
+                TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "TODO"),
+                    TableOperators.And,
+                    TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThan, "t")
+                    )
+                );
+
+            // Una única condición
+            var query = new TableQuery<TodoTableEntity>().Where(
+                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, particion)
+                );
+
+            var segment = await todoTable.ExecuteQuerySegmentedAsync(query, null);
+            return new OkObjectResult(segment.Select(ToTodo));
+        }
     }
 }
