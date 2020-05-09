@@ -20,6 +20,7 @@ namespace FunctionHTTP
         private const string TableName = "MyTable";
         private const string KeyParticion = "PERSONA";
         private const string routeDelete = "delete";
+        private const string routeUpdate = "update";
 
 
         public class Todo
@@ -64,6 +65,12 @@ namespace FunctionHTTP
         public class TodoCreateModel
         {
             public string Name { get; set; }
+        }
+
+        public class TodoUpdateModel
+        {
+            public string Nombre { get; set; }
+            public bool IsCompleted { get; set; }
         }
 
         [FunctionName("InsertPersona")]
@@ -158,5 +165,40 @@ namespace FunctionHTTP
             }
             return new OkResult();
         }
+
+
+        [FunctionName("Table_UpdateTodo")]
+        public static async Task<IActionResult> UpdateTodo(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = routeUpdate + "/{id}")]HttpRequest req,
+            [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
+            ILogger log, string id)
+        {
+
+            var particion = req.Query["partition"];
+            log.LogInformation("Delete por particion: " + particion);
+
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var updated = JsonConvert.DeserializeObject<TodoUpdateModel>(requestBody);
+
+            var findOperation = TableOperation.Retrieve<TodoTableEntity>(particion, id);
+            var findResult = await todoTable.ExecuteAsync(findOperation);
+            if (findResult.Result == null)
+            {
+                return new NotFoundResult();
+            }
+            var existingRow = (TodoTableEntity)findResult.Result;
+
+            existingRow.IsCompleted = updated.IsCompleted;
+            if (!string.IsNullOrEmpty(updated.Nombre))
+            {
+                existingRow.NombreEmpleado = updated.Nombre;
+            }
+
+            var replaceOperation = TableOperation.Replace(existingRow);
+            await todoTable.ExecuteAsync(replaceOperation);
+
+            return new OkObjectResult(existingRow.ToTodo());
+        }
+
     }
 }
