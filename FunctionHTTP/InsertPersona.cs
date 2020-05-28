@@ -97,7 +97,7 @@ namespace FunctionHTTP
         [FunctionName("RecuperaTabla")]
         public static async Task<IActionResult> GetTodos(
 //            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Route)]HttpRequest req,
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get")]HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
             ILogger log)
         {
@@ -112,7 +112,7 @@ namespace FunctionHTTP
         [FunctionName("RecuperaTablaByPartition")]
         public static async Task<IActionResult> GetByPartition(
 //            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/{id}")]HttpRequest req,
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get")]HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
             ILogger log)
         {
@@ -143,7 +143,7 @@ namespace FunctionHTTP
 
         [FunctionName("Table_DeleteTodo")]
         public static async Task<IActionResult> DeleteTodo(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = routeDelete + "/{id}")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = routeDelete + "/{id}")]HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
             ILogger log, string id)
         {
@@ -169,7 +169,7 @@ namespace FunctionHTTP
 
         [FunctionName("Table_UpdateTodo")]
         public static async Task<IActionResult> UpdateTodo(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = routeUpdate + "/{id}")]HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = routeUpdate + "/{id}")]HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
             ILogger log, string id)
         {
@@ -199,6 +199,8 @@ namespace FunctionHTTP
 
             return new OkObjectResult(existingRow.ToTodo());
         }
+
+
 
     }
 }
