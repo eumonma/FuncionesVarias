@@ -15,6 +15,8 @@ using System.Net.Http;
 using System.Collections.Generic;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace FunctionHTTP
 {
@@ -99,7 +101,7 @@ namespace FunctionHTTP
 
         [FunctionName("RecuperaTabla")]
         public static async Task<IActionResult> GetTodos(
-//            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Route)]HttpRequest req,
+            //            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = Route)]HttpRequest req,
             [HttpTrigger(AuthorizationLevel.Function, "get")]HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
             ILogger log)
@@ -107,14 +109,14 @@ namespace FunctionHTTP
             log.LogInformation("Getting todo list items");
             var query = new TableQuery<TodoTableEntity>();
             var segment = await todoTable.ExecuteQuerySegmentedAsync(query, null);
-//            return new OkObjectResult(segment.Select(Mappings.ToTodo));
+            //            return new OkObjectResult(segment.Select(Mappings.ToTodo));
             return new OkObjectResult(segment.Select(ToTodo));
         }
 
 
         [FunctionName("RecuperaTablaByPartition")]
         public static async Task<IActionResult> GetByPartition(
-//            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/{id}")]HttpRequest req,
+            //            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/{id}")]HttpRequest req,
             [HttpTrigger(AuthorizationLevel.Function, "get")]HttpRequest req,
             [Table(TableName, Connection = "AzureWebJobsStorage")] CloudTable todoTable,
             ILogger log)
@@ -163,7 +165,7 @@ namespace FunctionHTTP
             }
             catch (StorageException e) when (e.RequestInformation.HttpStatusCode == 404)
             {
-                
+
                 return new NotFoundResult();
             }
             return new OkResult();
@@ -262,6 +264,39 @@ namespace FunctionHTTP
             await blockBlob.SetPropertiesAsync();
 
             return blockBlob.Uri.ToString();
+        }
+
+        [FunctionName("DownloadImage")]
+        public static async Task<HttpResponseMessage> DownloadImage(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "download/{fileName}")]HttpRequestMessage req,
+            string fileName,
+            ILogger log)
+        {
+
+            log.LogInformation("trigger function processed a request.");
+
+            StorageCredentials storageCredentials = new StorageCredentials("almacenamiento1fotos", "dRKSB+/Hpdb1HtmTQJ25xmyxo3XSPV6Qd4t7JZIIf+lG8d1r7MQXIGd+ZdIP765cWPzmR6FqdU5NthnGHILJqA==");
+            CloudStorageAccount storageAccount = new CloudStorageAccount(storageCredentials, true);
+            CloudBlobContainer container = storageAccount.CreateCloudBlobClient().GetContainerReference("fotos1equipo");
+            //var fileName = "Nombre de la imagen";
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
+
+            HttpResponseMessage message = new HttpResponseMessage(HttpStatusCode.OK);
+
+            Stream blobStream = await blockBlob.OpenReadAsync();
+
+
+            message.Content = new StreamContent(blobStream);
+            message.Content.Headers.ContentLength = blockBlob.Properties.Length;
+            message.StatusCode = HttpStatusCode.OK;
+            message.Content.Headers.ContentType = new MediaTypeHeaderValue(blockBlob.Properties.ContentType);
+            message.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment")
+            {
+                FileName = $"CopyOf_{blockBlob.Name}",
+                Size = blockBlob.Properties.Length
+            };
+            return message;
+
         }
     }
 }
