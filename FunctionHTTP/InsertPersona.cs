@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using System.Net.Http;
 using System.Collections.Generic;
+using Microsoft.WindowsAzure.Storage.Auth;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace FunctionHTTP
 {
@@ -206,14 +208,12 @@ namespace FunctionHTTP
 
 
         [FunctionName("UploadImage")]
-        public static async Task Run(
+        public static async Task<IActionResult> InsertaBlob(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "upload")]HttpRequestMessage req,
             ILogger log)
         {
             var provider = new MultipartMemoryStreamProvider();
-         
             await req.Content.ReadAsMultipartAsync(provider);
-
             var files = provider.Contents;
             List<string> uploadsurls = new List<string>();
             foreach (var file in files)
@@ -223,44 +223,45 @@ namespace FunctionHTTP
                 string oldFileName = fileInfo.FileName;
                 string newFileName = guid.ToString();
                 var fileExtension = oldFileName.Split('.').Last().Replace("\"", "").Trim();
-                
+                var fileData = await file.ReadAsByteArrayAsync();
+
+                try
+                {
+                    var upload = await UploadFileToStorage(fileData, newFileName + ".");
+                    uploadsurls.Add(upload);
+                }
+                catch (Exception ex)
+                {
+                    log.LogError(ex.Message);
+                    return new BadRequestObjectResult("Error al subir: " + oldFileName);
+                }
             }
-
-             
-
-
-            //var file = provider.Contents.First();
-            //var fileInfo = file.Headers.ContentDisposition;
-            var fileData = await file.ReadAsByteArrayAsync();
-
-            var newImage = new Image()
-            {
-                FileName = fileInfo.FileName,
-                Size = fileData.LongLength,
-                Status = ImageStatus.Processing
-            };
-
-            var imageName = await DataHelper.CreateImageRecord(newImage);
-            if (!(await StorageHelper.SaveToBlobStorage(imageName, fileData)))
-                return new HttpResponseMessage(HttpStatusCode.InternalServerError);
-
-            return new HttpResponseMessage(HttpStatusCode.Created)
-            {
-                Content = new StringContent(imageName)
-            };
-        };
-
-        public static async Task SaveToBlobStorage(string blobName, byte[] data)
-        {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
-            CloudBlobClient client = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer container = client.GetContainerReference("images");
-
-            var blob = container.GetBlockBlobReference(blobName);
-            await blob.UploadFromByteArrayAsync(data, 0, data.Length);
-
-            return true;
+            return uploadsurls != null
+                ? (ActionResult)new OkObjectResult(uploadsurls)
+                : new BadRequestObjectResult("Erro al subir el Blob");
         }
 
+
+        private static async Task<string> UploadFileToStorage(byte[] fileStream, string fileName)
+        {
+            //StorageCredentials storageCredentials = new StorageCredentials("<AccountName>", "KeyValue");
+            StorageCredentials storageCredentials = new StorageCredentials("almacenamiento1fotos", "dRKSB+/Hpdb1HtmTQJ25xmyxo3XSPV6Qd4t7JZIIf+lG8d1r7MQXIGd+ZdIP765cWPzmR6FqdU5NthnGHILJqA==");
+
+            CloudStorageAccount storageAccount = new CloudStorageAccount(storageCredentials, true);
+
+            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+
+            CloudBlobContainer container = blobClient.GetContainerReference("fotos1equipo");
+
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
+
+            // Upload the file
+            await blockBlob.UploadFromByteArrayAsync(fileStream, 0, fileStream.Length);
+
+            blockBlob.Properties.ContentType = "image/jpg";
+            await blockBlob.SetPropertiesAsync();
+
+            return blockBlob.Uri.ToString();
+        }
     }
 }
