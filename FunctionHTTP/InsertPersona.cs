@@ -11,7 +11,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
-
+using System.Net.Http;
+using System.Collections.Generic;
 
 namespace FunctionHTTP
 {
@@ -201,6 +202,65 @@ namespace FunctionHTTP
         }
 
 
+        // Incorporar la capacidad de subir imágenes
+
+
+        [FunctionName("UploadImage")]
+        public static async Task Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "upload")]HttpRequestMessage req,
+            ILogger log)
+        {
+            var provider = new MultipartMemoryStreamProvider();
+         
+            await req.Content.ReadAsMultipartAsync(provider);
+
+            var files = provider.Contents;
+            List<string> uploadsurls = new List<string>();
+            foreach (var file in files)
+            {
+                var fileInfo = file.Headers.ContentDisposition;
+                Guid guid = Guid.NewGuid();
+                string oldFileName = fileInfo.FileName;
+                string newFileName = guid.ToString();
+                var fileExtension = oldFileName.Split('.').Last().Replace("\"", "").Trim();
+                
+            }
+
+
+
+
+            //var file = provider.Contents.First();
+            //var fileInfo = file.Headers.ContentDisposition;
+            var fileData = await file.ReadAsByteArrayAsync();
+
+            var newImage = new Image()
+            {
+                FileName = fileInfo.FileName,
+                Size = fileData.LongLength,
+                Status = ImageStatus.Processing
+            };
+
+            var imageName = await DataHelper.CreateImageRecord(newImage);
+            if (!(await StorageHelper.SaveToBlobStorage(imageName, fileData)))
+                return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+
+            return new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = new StringContent(imageName)
+            };
+        };
+
+        public static async Task SaveToBlobStorage(string blobName, byte[] data)
+        {
+            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(StorageConnectionString);
+            CloudBlobClient client = storageAccount.CreateCloudBlobClient();
+            CloudBlobContainer container = client.GetContainerReference("images");
+
+            var blob = container.GetBlockBlobReference(blobName);
+            await blob.UploadFromByteArrayAsync(data, 0, data.Length);
+
+            return true;
+        }
 
     }
 }
