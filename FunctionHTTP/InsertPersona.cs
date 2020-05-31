@@ -298,5 +298,29 @@ namespace FunctionHTTP
             return message;
 
         }
+
+
+        [FunctionName("DeleteImage")]
+        public static async Task<bool> DeleteImage(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "delete/{fileName}")]HttpRequestMessage req,
+        string fileName,
+        ILogger log)
+        {
+
+            log.LogInformation("trigger function processed a request.");
+
+            StorageCredentials storageCredentials = new StorageCredentials("almacenamiento1fotos", "dRKSB+/Hpdb1HtmTQJ25xmyxo3XSPV6Qd4t7JZIIf+lG8d1r7MQXIGd+ZdIP765cWPzmR6FqdU5NthnGHILJqA==");
+            CloudStorageAccount storageAccount = new CloudStorageAccount(storageCredentials, true);
+            CloudBlobContainer container = storageAccount.CreateCloudBlobClient().GetContainerReference("fotos1equipo");
+            //var fileName = "Nombre de la imagen";
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
+
+            var blobDeleted = await blockBlob.DeleteIfExistsAsync();
+
+            return blobDeleted;
+
+        }
+
     }
+
 }
