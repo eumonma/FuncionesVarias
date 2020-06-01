@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionHTTP", "FunctionHTTP\FunctionHTTP.csproj", "{E8492FF1-C2D2-4BBA-89CC-EE33EDED260E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FuncionBlanco", "FuncionBlanco\FuncionBlanco.csproj", "{391AAF48-03A8-4D16-AA4A-12286121C712}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FuncionBlanco", "FuncionBlanco\FuncionBlanco.csproj", "{391AAF48-03A8-4D16-AA4A-12286121C712}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmpleadosMantenimiento", "EmpleadosMantenimiento\EmpleadosMantenimiento.csproj", "{D9AE42EB-73FC-4E85-A886-00850AE1FBD3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{391AAF48-03A8-4D16-AA4A-12286121C712}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{391AAF48-03A8-4D16-AA4A-12286121C712}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{391AAF48-03A8-4D16-AA4A-12286121C712}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9AE42EB-73FC-4E85-A886-00850AE1FBD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9AE42EB-73FC-4E85-A886-00850AE1FBD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9AE42EB-73FC-4E85-A886-00850AE1FBD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9AE42EB-73FC-4E85-A886-00850AE1FBD3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
